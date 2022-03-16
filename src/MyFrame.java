@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -6,48 +7,87 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MyFrame extends JFrame {
+    private DefaultTableModel dtm;
     List<Account> accounts = new ArrayList<>();
     Generator generator = new Generator();
     JTable table;
-    private Object[][] array = new String[4][20];
+    JScrollPane scrollPane;
     private Object[] columHeader = new String[]{"id", "Stock name", "Stock quantity", "Ask price"};
     JComboBox<String> comboBox;
+    Container container;
+    SpringLayout layout;
 
     public MyFrame() {
+        dtm = new DefaultTableModel();
+        dtm.setColumnIdentifiers(columHeader);
+        container = getContentPane();
+        layout = new SpringLayout();
+        container.setLayout(layout);
         JButton bid = new JButton("Add new bid");
-        bid.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                JDialog dialog = createBidDialog("Create new bid", true);
-                dialog.setVisible(true);
-            }
+        bid.addActionListener(e -> {
+            JDialog dialog = createBidDialog("Create new bid", true);
+            dialog.setVisible(true);
         });
-        JPanel bidPanel = new JPanel();
-        bidPanel.add(bid);
-        Container container = getContentPane();
-        container.setLayout(new BorderLayout());
-        container.add(new Label("Label!"), BorderLayout.NORTH);
-        JPanel panel = new JPanel();
+        container.add(bid);
+        layout.putConstraint(SpringLayout.SOUTH, bid, -20, SpringLayout.SOUTH, container);
+        layout.putConstraint(SpringLayout.WEST, bid, 150, SpringLayout.WEST, container);
         comboBox = new JComboBox<>();
-        comboBox.setPreferredSize(new Dimension(300, 30));
-        panel.add(comboBox);
-        container.add(panel, BorderLayout.NORTH);
-        container.add(bidPanel, BorderLayout.SOUTH);
-        JButton button = new JButton("Add new account");
-        button.addActionListener(new ActionListener() {
+        comboBox.setPreferredSize(new Dimension(250, 20));
+        container.add(comboBox);
+        layout.putConstraint(SpringLayout.WEST, comboBox, 10, SpringLayout.WEST, container);
+        layout.putConstraint(SpringLayout.NORTH, comboBox, 13, SpringLayout.NORTH, container);
+        table = new JTable(dtm);
+        scrollPane = new JScrollPane(table);
+        scrollPane.setPreferredSize(new Dimension(410, 340));
+        container.add(scrollPane);
+        layout.putConstraint(SpringLayout.NORTH, scrollPane, 45, SpringLayout.NORTH, container);
+        comboBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                JDialog dialog = createAccountDialog("Add new account", true);
-                dialog.setVisible(true);
+                String id = (String) comboBox.getSelectedItem();
+                Account acc = null;
+                for (Account account : accounts) {
+                    if (account.getId() == Integer.parseInt(id)) {
+                        acc = account;
+                        break;
+                    }
+                }
+                List<Bid> bids = acc.getBids();
+                if (!bids.isEmpty()) {
+                    for (int i = 0; i < 100; i++) {
+                        try {
+                            dtm.removeRow(0);
+                        } catch (ArrayIndexOutOfBoundsException ex) {
+                            System.out.println("там и так пусто");
+                            break;
+                        }
+                    }
+                    for (int i = 0; i < bids.size(); i++) {
+                        dtm.addRow(new String[]{String.valueOf(bids.get(i).getId()), bids.get(i).getStockName(),
+                                String.valueOf(bids.get(i).getQuantity()), String.valueOf(bids.get(i).getAskPrice())});
+                    }
+                } else {
+                    for (int i = 0; i < 100; i++) {
+                        try {
+                            dtm.removeRow(0);
+                        } catch (ArrayIndexOutOfBoundsException ex) {
+                            System.out.println("ну пусто же");
+                            break;
+                        }
+                    }
+                }
             }
         });
-        panel.add(button);
-        table = new JTable(array, columHeader);
-        container.add(table, BorderLayout.CENTER);
-        container.add(panel, BorderLayout.NORTH);
-        container.add(new JScrollPane(table));
+        JButton button = new JButton("Add new account");
+        button.addActionListener(e -> {
+            JDialog dialog = createAccountDialog("Add new account", true);
+            dialog.setVisible(true);
+        });
+        container.add(button);
+        layout.putConstraint(SpringLayout.WEST, button, 10, SpringLayout.EAST, comboBox);
+        layout.putConstraint(SpringLayout.NORTH, button, 10, SpringLayout.NORTH, container);
         setTitle("FirstSwingTask");
-        setPreferredSize(new Dimension(500, 480));
+        setPreferredSize(new Dimension(430, 480));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         pack();
         setVisible(true);
@@ -108,8 +148,30 @@ public class MyFrame extends JFrame {
         cost.setPreferredSize(new Dimension(200, 20));
         panel.add(cost);
         JButton send = new JButton("Send");
+        send.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (comboBox.getSelectedItem() != null) {
+                    Account account = null;
+                    for (Account acc : accounts) {
+                        if (acc.getId() == Integer.parseInt((String) comboBox.getSelectedItem())) {
+                            account = acc;
+                            break;
+                        }
+                    }
+                    if (account != null) {
+                        String stockName = name.getText();
+                        int stockQuantity = Integer.parseInt(quantity.getText());
+                        int stockPrice = Integer.parseInt(price.getText());
+                        account.addBid(account.getId(), stockName, stockQuantity, stockPrice);
+                    }
+                }
+                dialog.dispose();
+            }
+        });
         panel.add(send);
         JButton cancel = new JButton("Cancel");
+        cancel.addActionListener(e -> dialog.dispose());
         panel.add(cancel);
         layout.putConstraint(SpringLayout.WEST, nameOfStock, 10, SpringLayout.WEST, panel);
         layout.putConstraint(SpringLayout.NORTH, nameOfStock, 10, SpringLayout.NORTH, panel);
