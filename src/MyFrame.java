@@ -52,29 +52,8 @@ public class MyFrame extends JFrame {
                         break;
                     }
                 }
-                List<Bid> bids = acc.getBids();
-                if (!bids.isEmpty()) {
-                    for (int i = 0; i < 100; i++) {
-                        try {
-                            dtm.removeRow(0);
-                        } catch (ArrayIndexOutOfBoundsException ex) {
-                            System.out.println("там и так пусто");
-                            break;
-                        }
-                    }
-                    for (int i = 0; i < bids.size(); i++) {
-                        dtm.addRow(new String[]{String.valueOf(bids.get(i).getId()), bids.get(i).getStockName(),
-                                String.valueOf(bids.get(i).getQuantity()), String.valueOf(bids.get(i).getAskPrice())});
-                    }
-                } else {
-                    for (int i = 0; i < 100; i++) {
-                        try {
-                            dtm.removeRow(0);
-                        } catch (ArrayIndexOutOfBoundsException ex) {
-                            System.out.println("ну пусто же");
-                            break;
-                        }
-                    }
+                if(acc != null) {
+                    updateTable(acc);
                 }
             }
         });
@@ -164,6 +143,7 @@ public class MyFrame extends JFrame {
                         int stockQuantity = Integer.parseInt(quantity.getText());
                         int stockPrice = Integer.parseInt(price.getText());
                         account.addBid(account.getId(), stockName, stockQuantity, stockPrice);
+                        updateTable(account);
                     }
                 }
                 dialog.dispose();
@@ -197,6 +177,33 @@ public class MyFrame extends JFrame {
         dialog.add(panel);
         dialog.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         return dialog;
+    }
+
+    public void updateTable(Account account) {
+        List<Bid> bids = account.getBids();
+        if (!bids.isEmpty()) {
+            for (int i = 0; i < 100; i++) {
+                try {
+                    dtm.removeRow(0);
+                } catch (ArrayIndexOutOfBoundsException ex) {
+                    System.out.println("там и так пусто");
+                    break;
+                }
+            }
+            for (int i = 0; i < bids.size(); i++) {
+                dtm.addRow(new String[]{String.valueOf(bids.get(i).getId()), bids.get(i).getStockName(),
+                        String.valueOf(bids.get(i).getQuantity()), String.valueOf(bids.get(i).getAskPrice())});
+            }
+        } else {
+            for (int i = 0; i < 100; i++) {
+                try {
+                    dtm.removeRow(0);
+                } catch (ArrayIndexOutOfBoundsException ex) {
+                    System.out.println("ну пусто же");
+                    break;
+                }
+            }
+        }
     }
 
     public static void main(String[] args) {
