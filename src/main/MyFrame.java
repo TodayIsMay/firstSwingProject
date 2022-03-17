@@ -1,43 +1,48 @@
+package main;
+
+import entities.Account;
+import entities.Order;
+import utilities.DigitFilter;
+import utilities.Generator;
+import utilities.JTextFieldLimit;
+import utilities.PriceKeyListener;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.PlainDocument;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MyFrame extends JFrame {
-    private DefaultTableModel dtm;
-    List<Account> accounts = new ArrayList<>();
-    Generator generator = new Generator();
-    JTable table;
-    JScrollPane scrollPane;
-    private Object[] columHeader = new String[]{"id", "Stock name", "Stock quantity", "Ask price"};
-    JComboBox<String> comboBox;
-    Container container;
-    SpringLayout layout;
+    private final DefaultTableModel dtm;
+    private final List<Account> accounts = new ArrayList<>();
+    private final Generator generator = new Generator();
+    private final JComboBox<String> comboBox;
 
     public MyFrame() {
         dtm = new DefaultTableModel();
+        Object[] columHeader = new String[]{"id", "Stock name", "Stock quantity", "Ask price"};
         dtm.setColumnIdentifiers(columHeader);
-        container = getContentPane();
-        layout = new SpringLayout();
+        Container container = getContentPane();
+        SpringLayout layout = new SpringLayout();
         container.setLayout(layout);
-        JButton bid = new JButton("Add new bid");
-        bid.addActionListener(e -> {
-            JDialog dialog = createBidDialog("Create new bid", true);
+        JButton order = new JButton("Add new order");
+        order.addActionListener(e -> {
+            JDialog dialog = createOrderDialog("Create new order", true);
             dialog.setVisible(true);
         });
-        container.add(bid);
-        layout.putConstraint(SpringLayout.SOUTH, bid, -20, SpringLayout.SOUTH, container);
-        layout.putConstraint(SpringLayout.WEST, bid, 150, SpringLayout.WEST, container);
+        container.add(order);
+        layout.putConstraint(SpringLayout.SOUTH, order, -20, SpringLayout.SOUTH, container);
+        layout.putConstraint(SpringLayout.WEST, order, 150, SpringLayout.WEST, container);
         comboBox = new JComboBox<>();
         comboBox.setPreferredSize(new Dimension(250, 20));
         container.add(comboBox);
         layout.putConstraint(SpringLayout.WEST, comboBox, 10, SpringLayout.WEST, container);
         layout.putConstraint(SpringLayout.NORTH, comboBox, 13, SpringLayout.NORTH, container);
-        table = new JTable(dtm);
-        scrollPane = new JScrollPane(table);
+        JTable table = new JTable(dtm);
+        JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setPreferredSize(new Dimension(410, 340));
         container.add(scrollPane);
         layout.putConstraint(SpringLayout.NORTH, scrollPane, 45, SpringLayout.NORTH, container);
@@ -52,7 +57,7 @@ public class MyFrame extends JFrame {
                         break;
                     }
                 }
-                if(acc != null) {
+                if (acc != null) {
                     updateTable(acc);
                 }
             }
@@ -81,14 +86,19 @@ public class MyFrame extends JFrame {
         JTextArea accName = new JTextArea();
         accName.setPreferredSize(new Dimension(200, 20));
         JButton cancel = new JButton("Cancel");
+        cancel.addActionListener(e -> dialog.dispose());
         JButton save = new JButton("Save");
         save.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Account account = new Account(generator.generate(), accName.getText());
-                accounts.add(account);
-                comboBox.addItem(account.toString());
-                dialog.dispose();
+                if(!accName.getText().equals("")) {
+                    Account account = new Account(generator.generate(), accName.getText());
+                    accounts.add(account);
+                    comboBox.addItem(account.toString());
+                    dialog.dispose();
+                }else{
+                    JOptionPane.showMessageDialog(dialog, "Name of the account shouldn't be empty!");
+                }
             }
         });
         withText.add(accName);
@@ -99,7 +109,7 @@ public class MyFrame extends JFrame {
         return dialog;
     }
 
-    public JDialog createBidDialog(String title, boolean modal) {
+    public JDialog createOrderDialog(String title, boolean modal) {
         JDialog dialog = new JDialog(this, title, modal);
         dialog.setSize(400, 250);
         JPanel panel = new JPanel();
@@ -108,17 +118,22 @@ public class MyFrame extends JFrame {
         JLabel nameOfStock = new JLabel("Enter name of stock:");
         panel.add(nameOfStock);
         JTextField name = new JTextField();
+        name.setDocument(new JTextFieldLimit(4));
         name.setPreferredSize(new Dimension(200, 20));
         panel.add(name);
         JLabel quantityOfStocks = new JLabel("Enter quantity of stocks:");
         panel.add(quantityOfStocks);
         JTextField quantity = new JTextField();
         quantity.setPreferredSize(new Dimension(200, 20));
+        PlainDocument quantityDocument = (PlainDocument) quantity.getDocument();
+        quantityDocument.setDocumentFilter(new DigitFilter());
         panel.add(quantity);
         JLabel priceOfOneStock = new JLabel("Enter price of one stock");
         panel.add(priceOfOneStock);
         JTextField price = new JTextField();
         price.setPreferredSize(new Dimension(200, 20));
+        PlainDocument priceDocument = (PlainDocument) quantity.getDocument();
+        priceDocument.setDocumentFilter(new DigitFilter());
         panel.add(price);
         JLabel purchaseCost = new JLabel("Purchase cost");
         panel.add(purchaseCost);
@@ -126,6 +141,8 @@ public class MyFrame extends JFrame {
         cost.setEditable(false);
         cost.setPreferredSize(new Dimension(200, 20));
         panel.add(cost);
+        quantity.addKeyListener(new PriceKeyListener(quantity, price, cost));
+        price.addKeyListener(new PriceKeyListener(quantity, price, cost));
         JButton send = new JButton("Send");
         send.addActionListener(new ActionListener() {
             @Override
@@ -142,7 +159,7 @@ public class MyFrame extends JFrame {
                         String stockName = name.getText();
                         int stockQuantity = Integer.parseInt(quantity.getText());
                         int stockPrice = Integer.parseInt(price.getText());
-                        account.addBid(account.getId(), stockName, stockQuantity, stockPrice);
+                        account.addOrder(account.getId(), stockName, stockQuantity, stockPrice);
                         updateTable(account);
                     }
                 }
@@ -180,26 +197,24 @@ public class MyFrame extends JFrame {
     }
 
     public void updateTable(Account account) {
-        List<Bid> bids = account.getBids();
-        if (!bids.isEmpty()) {
+        List<Order> orders = account.getOrders();
+        if (!orders.isEmpty()) {
             for (int i = 0; i < 100; i++) {
                 try {
                     dtm.removeRow(0);
                 } catch (ArrayIndexOutOfBoundsException ex) {
-                    System.out.println("там и так пусто");
                     break;
                 }
             }
-            for (int i = 0; i < bids.size(); i++) {
-                dtm.addRow(new String[]{String.valueOf(bids.get(i).getId()), bids.get(i).getStockName(),
-                        String.valueOf(bids.get(i).getQuantity()), String.valueOf(bids.get(i).getAskPrice())});
+            for (Order order : orders) {
+                dtm.addRow(new String[]{String.valueOf(order.getId()), order.getStockName(),
+                        String.valueOf(order.getQuantity()), String.valueOf(order.getAskPrice())});
             }
         } else {
             for (int i = 0; i < 100; i++) {
                 try {
                     dtm.removeRow(0);
                 } catch (ArrayIndexOutOfBoundsException ex) {
-                    System.out.println("ну пусто же");
                     break;
                 }
             }

@@ -1,11 +1,13 @@
-public class Bid {
+package entities;
+
+public class Order {
     private int id;
     private int accountId;
     private String stockName;
     private int quantity;
     private int askPrice;
 
-    public Bid(int id, int accountId, String stockName, int quantity, int askPrice) {
+    public Order(int id, int accountId, String stockName, int quantity, int askPrice) {
         this.id = id;
         this.accountId = accountId;
         this.stockName = stockName;

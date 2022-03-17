@@ -1,3 +1,5 @@
+package utilities;
+
 public class Generator {
     private int id = 0;
 
