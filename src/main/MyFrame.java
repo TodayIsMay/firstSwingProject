@@ -57,9 +57,8 @@ public class MyFrame extends JFrame {
                         break;
                     }
                 }
-                if (acc != null) {
+                if (acc != null)
                     updateTable(acc);
-                }
             }
         });
         JButton button = new JButton("Add new account");
@@ -91,12 +90,12 @@ public class MyFrame extends JFrame {
         save.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if(!accName.getText().equals("")) {
+                if (!accName.getText().equals("")) {
                     Account account = new Account(generator.generate(), accName.getText());
                     accounts.add(account);
                     comboBox.addItem(account.toString());
                     dialog.dispose();
-                }else{
+                } else {
                     JOptionPane.showMessageDialog(dialog, "Name of the account shouldn't be empty!");
                 }
             }

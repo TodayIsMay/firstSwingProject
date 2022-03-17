@@ -26,7 +26,7 @@ public class PriceKeyListener implements KeyListener {
                 long result = quantityValue * priceValue;
                 cost.setText(String.valueOf(result));
             }
-        }catch(NumberFormatException ex){
+        } catch (NumberFormatException ex) {
             System.out.println(ex.getMessage());
         }
     }
@@ -42,7 +42,7 @@ public class PriceKeyListener implements KeyListener {
                 long result = quantityValue * priceValue;
                 cost.setText(String.valueOf(result));
             }
-        }catch(NumberFormatException ex){
+        } catch (NumberFormatException ex) {
             System.out.println(ex.getMessage());
         }
     }
@@ -57,7 +57,7 @@ public class PriceKeyListener implements KeyListener {
                 int priceValue = Integer.parseInt(price.getText());
                 cost.setText(String.valueOf(quantityValue * priceValue));
             }
-        }catch(NumberFormatException ex){
+        } catch (NumberFormatException ex) {
             System.out.println(ex.getMessage());
         }
     }
