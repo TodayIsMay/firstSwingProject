@@ -3,25 +3,32 @@ package main;
 import entities.Account;
 import entities.Order;
 import utilities.DigitFilter;
-import utilities.Generator;
 import utilities.JTextFieldLimit;
 import utilities.PriceKeyListener;
+import utilities.Queries;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.text.PlainDocument;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MyFrame extends JFrame {
+    DataBaseConnector connector = new DataBaseConnector();
+    Connection connection;
     private final DefaultTableModel dtm;
     private final List<Account> accounts = new ArrayList<>();
-    private final Generator generator = new Generator();
     private final JComboBox<String> comboBox;
 
     public MyFrame() {
+        connector.connect();
+        connection = connector.getConnection();
+        Queries queries = new Queries(connection);
         dtm = new DefaultTableModel();
         Object[] columHeader = new String[]{"id", "Stock name", "Stock quantity", "Ask price"};
         dtm.setColumnIdentifiers(columHeader);
@@ -30,7 +37,7 @@ public class MyFrame extends JFrame {
         container.setLayout(layout);
         JButton order = new JButton("Add new order");
         order.addActionListener(e -> {
-            JDialog dialog = createOrderDialog("Create new order", true);
+            JDialog dialog = createOrderDialog("Create new order", true, queries);
             dialog.setVisible(true);
         });
         container.add(order);
@@ -46,6 +53,32 @@ public class MyFrame extends JFrame {
         scrollPane.setPreferredSize(new Dimension(410, 340));
         container.add(scrollPane);
         layout.putConstraint(SpringLayout.NORTH, scrollPane, 45, SpringLayout.NORTH, container);
+        try {
+            for (Account newAccount : queries.getAccountsFromDb()) {
+                accounts.add(newAccount);
+                comboBox.addItem(String.valueOf(newAccount.getId()));
+                System.out.println("account_id: " + newAccount.getId());
+            }
+            for (Account acc : accounts) {
+                queries.getOrdersFromAccount(acc);
+            }
+        } catch (NullPointerException exception) {
+            System.out.println("ошибка при заполнении комбобокса при запуске программы");
+            System.out.println(exception.getMessage());
+        }
+        if (!accounts.isEmpty()) {
+            String id = (String) comboBox.getSelectedItem();
+            Account acc = null;
+            for (Account account : accounts) {
+                if (account.getId() == Integer.parseInt(id)) {
+                    acc = account;
+                    break;
+                }
+            }
+            if (acc != null)
+                updateTable(acc, queries);
+        }
+
         comboBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -58,12 +91,12 @@ public class MyFrame extends JFrame {
                     }
                 }
                 if (acc != null)
-                    updateTable(acc);
+                    updateTable(acc, queries);
             }
         });
         JButton button = new JButton("Add new account");
         button.addActionListener(e -> {
-            JDialog dialog = createAccountDialog("Add new account", true);
+            JDialog dialog = createAccountDialog("Add new account", true, queries);
             dialog.setVisible(true);
         });
         container.add(button);
@@ -76,7 +109,7 @@ public class MyFrame extends JFrame {
         setVisible(true);
     }
 
-    private JDialog createAccountDialog(String title, boolean modal) {
+    private JDialog createAccountDialog(String title, boolean modal, Queries queries) {
         JDialog dialog = new JDialog(this, title, modal);
         JPanel panel = new JPanel();
         JPanel withText = new JPanel();
@@ -90,10 +123,18 @@ public class MyFrame extends JFrame {
         save.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (!accName.getText().equals("")) {
-                    Account account = new Account(generator.generate(), accName.getText());
+                String accNameString = accName.getText();
+                LocalDateTime creationTime = LocalDateTime.now();
+                if (!accNameString.equals("")) {
+                    try {
+                        queries.insert(accNameString, creationTime);
+                    } catch (NullPointerException exception) {
+                        System.out.println(exception.getMessage());
+                        System.out.println("Ошибка создания стэйтмента при создании аккаунта");
+                    }
+                    Account account = queries.getId(accNameString, creationTime);
                     accounts.add(account);
-                    comboBox.addItem(account.toString());
+                    comboBox.addItem(String.valueOf(account.getId()));
                     dialog.dispose();
                 } else {
                     JOptionPane.showMessageDialog(dialog, "Name of the account shouldn't be empty!");
@@ -108,7 +149,7 @@ public class MyFrame extends JFrame {
         return dialog;
     }
 
-    public JDialog createOrderDialog(String title, boolean modal) {
+    public JDialog createOrderDialog(String title, boolean modal, Queries queries) {
         JDialog dialog = new JDialog(this, title, modal);
         dialog.setSize(400, 250);
         JPanel panel = new JPanel();
@@ -155,11 +196,18 @@ public class MyFrame extends JFrame {
                         }
                     }
                     if (account != null) {
+                        LocalDateTime creationTime = LocalDateTime.now();
                         String stockName = name.getText();
                         int stockQuantity = Integer.parseInt(quantity.getText());
                         int stockPrice = Integer.parseInt(price.getText());
-                        account.addOrder(account.getId(), stockName, stockQuantity, stockPrice);
-                        updateTable(account);
+                        try {
+                            queries.insertOrder(account, stockName, stockQuantity, stockPrice, creationTime);
+                            queries.addOrder(account, stockName, stockQuantity, stockPrice, creationTime);
+                            updateTable(account, queries);
+                        } catch (NullPointerException exception) {
+                            System.out.println("ошибос в создании ордера");
+                            System.out.println(exception.getMessage());
+                        }
                     }
                 }
                 dialog.dispose();
@@ -195,7 +243,7 @@ public class MyFrame extends JFrame {
         return dialog;
     }
 
-    public void updateTable(Account account) {
+    public void updateTable(Account account, Queries queries) {
         List<Order> orders = account.getOrders();
         if (!orders.isEmpty()) {
             for (int i = 0; i < 100; i++) {
@@ -205,9 +253,13 @@ public class MyFrame extends JFrame {
                     break;
                 }
             }
-            for (Order order : orders) {
-                dtm.addRow(new String[]{String.valueOf(order.getId()), order.getStockName(),
-                        String.valueOf(order.getQuantity()), String.valueOf(order.getAskPrice())});
+            try {
+                for (String[] array : queries.getOrders(account)) {
+                    dtm.addRow(array);
+                }
+            } catch (NullPointerException exception) {
+                System.out.println("ошибос в updateTable");
+                System.out.println(exception.getMessage());
             }
         } else {
             for (int i = 0; i < 100; i++) {

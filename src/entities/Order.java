@@ -1,18 +1,26 @@
 package entities;
 
+import java.time.LocalDateTime;
+
 public class Order {
     private int id;
     private int accountId;
     private String stockName;
     private int quantity;
     private int askPrice;
+    LocalDateTime creationTime;
 
-    public Order(int id, int accountId, String stockName, int quantity, int askPrice) {
+    public Order(int id, int accountId, String stockName, int quantity, int askPrice, LocalDateTime creationTime) {
         this.id = id;
         this.accountId = accountId;
         this.stockName = stockName;
         this.quantity = quantity;
         this.askPrice = askPrice;
+        this.creationTime = creationTime;
+    }
+
+    public LocalDateTime getCreationTime() {
+        return creationTime;
     }
 
     public int getId() {

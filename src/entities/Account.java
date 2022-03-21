@@ -1,19 +1,23 @@
 package entities;
 
-import utilities.Generator;
-
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Account {
-    Generator generator = new Generator();
     private int id = 0;
     private String name;
+    private LocalDateTime creationTime;
     private List<Order> orders = new ArrayList<>();
 
-    public Account(int id, String name) {
+    public Account(int id, String name, LocalDateTime creationTime) {
         this.id = id;
         this.name = name;
+        this.creationTime = creationTime;
+    }
+
+    public  LocalDateTime getCreationTime() {
+        return creationTime;
     }
 
     public int getId() {
@@ -41,8 +45,9 @@ public class Account {
         return String.valueOf(id);
     }
 
-    public void addOrder(int accountId, String stockName, int quantity, int askPrice) {
-        int bidId = generator.generate();
-        orders.add(new Order(bidId, accountId, stockName, quantity, askPrice));
+    public void addOrder(int orderId, int accountId, String stockName, int quantity, int askPrice,
+                         LocalDateTime orderCreationTime) {
+        //int bidId = generator.generate();
+        orders.add(new Order(orderId, accountId, stockName, quantity, askPrice, orderCreationTime));
     }
 }
