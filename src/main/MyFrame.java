@@ -51,6 +51,7 @@ public class MyFrame extends JFrame {
         layout.putConstraint(SpringLayout.WEST, comboBox, 10, SpringLayout.WEST, container);
         layout.putConstraint(SpringLayout.NORTH, comboBox, 13, SpringLayout.NORTH, container);
         JTable table = new JTable(dtm);
+        table.getColumn("Cancel order").setCellRenderer(new ButtonRenderer());
         table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
