@@ -183,7 +183,7 @@ public class MyFrame extends JFrame {
         panel.add(priceOfOneStock);
         JTextField price = new JTextField();
         price.setPreferredSize(new Dimension(200, 20));
-        PlainDocument priceDocument = (PlainDocument) quantity.getDocument();
+        PlainDocument priceDocument = (PlainDocument) price.getDocument();
         priceDocument.setDocumentFilter(new DigitFilter());
         panel.add(price);
         JLabel purchaseCost = new JLabel("Purchase cost");
