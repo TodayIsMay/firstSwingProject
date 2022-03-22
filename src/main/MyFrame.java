@@ -1,19 +1,20 @@
 package main;
 
+import com.mysql.cj.x.protobuf.MysqlxCrud;
 import entities.Account;
 import entities.Order;
-import utilities.DigitFilter;
-import utilities.JTextFieldLimit;
-import utilities.PriceKeyListener;
-import utilities.Queries;
+import utilities.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
 import javax.swing.text.PlainDocument;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.sql.Connection;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ public class MyFrame extends JFrame {
         connection = connector.getConnection();
         Queries queries = new Queries(connection);
         dtm = new DefaultTableModel();
-        Object[] columHeader = new String[]{"id", "Stock name", "Stock quantity", "Ask price"};
+        Object[] columHeader = new String[]{"id", "Stock name", "Stock quantity", "Ask price", "Cancel order"};
         dtm.setColumnIdentifiers(columHeader);
         Container container = getContentPane();
         SpringLayout layout = new SpringLayout();
@@ -58,6 +59,17 @@ public class MyFrame extends JFrame {
                     row, column);
                 c.setBackground(row % 2 == 0 ? Color.WHITE : Color.LIGHT_GRAY);
                 return c;
+            }
+        });
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                super.mouseClicked(e);
+                JTable target = (JTable) e.getSource();
+                int row = target.getSelectedRow();
+                int id = Integer.parseInt((String) dtm.getValueAt(row, 0));
+                dtm.removeRow(row);
+                queries.deleteOrder(id);
             }
         });
         JScrollPane scrollPane = new JScrollPane(table);
@@ -225,6 +237,7 @@ public class MyFrame extends JFrame {
             }
         });
         panel.add(send);
+
         JButton cancel = new JButton("Cancel");
         cancel.addActionListener(e -> dialog.dispose());
         panel.add(cancel);

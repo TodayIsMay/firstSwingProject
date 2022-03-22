@@ -111,12 +111,22 @@ public class Queries {
             ResultSet rs = statement.executeQuery(selectOrders);
             while (rs.next()) {
                 ordersArrays.add(new String[]{String.valueOf(rs.getInt(1)), rs.getString(2),
-                        String.valueOf(rs.getInt(3)), String.valueOf(rs.getInt(4))});
+                        String.valueOf(rs.getInt(3)), String.valueOf(rs.getInt(4)), "Cancel"});
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             System.out.println("getOrders()");
         }
         return ordersArrays;
+    }
+
+    public void deleteOrder(int id) {
+        try (Statement statement = connection.createStatement()) {
+            String deleteOrder = "delete from orders where id = " + id;
+            statement.execute(deleteOrder);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+            System.out.println("Queries.deleteOrder()");
+        }
     }
 }
