@@ -37,8 +37,12 @@ public class AccountDialog extends JDialog{
     }
 
     public void saveActionListener(JTextArea name) {
-        this.account = new Account(name.getText(), LocalDateTime.now());
-        this.dispose();
+        if(name.getText().equals("")) {
+            JOptionPane.showMessageDialog(this, "Account's fields shouldn't be empty!");
+        } else {
+            this.account = new Account(name.getText(), LocalDateTime.now());
+            this.dispose();
+        }
     }
 
     public Account getAccount() {

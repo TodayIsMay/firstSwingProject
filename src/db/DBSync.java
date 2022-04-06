@@ -2,6 +2,7 @@ package db;
 
 import data.*;
 
+import javax.swing.*;
 import java.sql.Connection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -21,12 +22,7 @@ public class DBSync implements ModelListener {
         for(Account account: accountList) {
             model.addAccount(account);
             for(Order order: queries.getOrders(account)) {
-                try {
-                    TimeUnit.MILLISECONDS.sleep(2);
-                    model.addOrder(order);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                model.addOrder(order);
             }
         }
     }

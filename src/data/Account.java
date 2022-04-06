@@ -23,11 +23,6 @@ public class Account extends Entity{
         return orders;
     }
 
-    @Override
-    public String toString() {
-        return "" + getId();
-    }
-
     public void addOrder(Order order) {
         orders.add(order);
     }

@@ -27,7 +27,7 @@ public class Queries{
             ResultSet rs = statement.executeQuery(getAccounts);
             while (rs.next()) {
                 accounts.add(new Account(rs.getInt(1), rs.getString(2),
-                    LocalDateTime.parse(rs.getString(3), formatter)));
+                        LocalDateTime.parse(rs.getString(3), formatter)));
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -51,7 +51,7 @@ public class Queries{
     public void insertOrder(Order order) {
         try {
             String insertOrder = "insert ignore into orders (id, account_id, stock_name, quantity, ask_price, creation_time) " +
-                "values (?, ?, ?, ?, ?, ?);";
+                    "values (?, ?, ?, ?, ?, ?);";
             PreparedStatement preparedStatement = connection.prepareStatement(insertOrder);
             preparedStatement.setInt(1, order.getId());
             preparedStatement.setInt(2, order.getAccountId());
@@ -74,7 +74,7 @@ public class Queries{
             ResultSet rs = preparedStatement.executeQuery();
             while (rs.next()) {
                 orders.add(new Order(rs.getInt(1), rs.getInt(2), rs.getString(3),
-                    rs.getInt(4), rs.getInt(5), LocalDateTime.parse(rs.getString(6), formatter)));
+                        rs.getInt(4), rs.getInt(5), LocalDateTime.parse(rs.getString(6), formatter)));
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());

@@ -22,27 +22,19 @@ public class Order extends Entity{
         this(DEFAULT_ID, accountId, stockName, quantity, askPrice,creationTime);
     }
 
-    public int getAccountId() {
-        return accountId;
+    public Order(int accountId, LocalDateTime creationTime) {
+        this(DEFAULT_ID, accountId, null, 0, 0, creationTime);
     }
 
-    public void setAccountId(int accountId) {
-        this.accountId = accountId;
+    public int getAccountId() {
+        return accountId;
     }
 
     public int getQuantity() {
         return quantity;
     }
 
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
-    }
-
     public int getAskPrice() {
         return askPrice;
-    }
-
-    public void setAskPrice(int askPrice) {
-        this.askPrice = askPrice;
     }
 }

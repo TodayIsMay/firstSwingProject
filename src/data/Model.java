@@ -1,8 +1,7 @@
 package data;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+import java.util.function.Predicate;
 
 public class Model {
     private int nextAccountId = 0;
@@ -15,7 +14,7 @@ public class Model {
         updateSymbols();
     }
 
-    public void addAccount(Account account) {
+    public boolean addAccount(Account account) throws NullPointerException {
         if(account != null) {
             if (account.getId() == -1) {
                 account = new Account(generateAccountId(), account.getName(), account.getCreationTime());
@@ -24,36 +23,41 @@ public class Model {
                     this.nextAccountId = account.getId();
             }
             accounts.add(account);
-            accountAdded(account);
+            return accountAdded(account);
         }
+        return false;
     }
 
-    public void accountAdded(Account account) {
+    public boolean accountAdded(Account account) {
         for (ModelListener listener : listeners) {
             listener.accountAdded(account);
         }
+        return true;
     }
 
-    public void addOrder(Order order) {
+    public boolean addOrder(Order order) {
         if (order.getId() == -1) {
             order = new Order(generateOrderId(), order.getAccountId(), order.getName(), order.getQuantity(),
-                order.getAskPrice(), order.getCreationTime());
+                    order.getAskPrice(), order.getCreationTime());
         }
         if(nextOrderId < order.getId())
-            this.nextOrderId = order.getId();
+            nextOrderId = order.getId();
         Account account = findAccountById(order.getAccountId());
-        account.addOrder(order);
-        ordersChanged(account.getOrders());
+        if(account != null) {
+            account.addOrder(order);
+            ordersChanged(account.getOrders());
+        } else {
+            return false;
+        }
+        return true;
     }
 
     public void removeOrder(Account account, int orderId) {
-        Order target = null;
-        for (Order order : account.getOrders()) {
-            if (order.getId() == orderId)
-                target = order;
+        Order target = findOrderById(orderId);
+        if(target != null) {
+            account.removeOrder(target);
+            orderRemoved(target);
         }
-        account.removeOrder(target);
-        orderRemoved(target);
     }
 
     public void orderRemoved(Order order) {
@@ -78,7 +82,7 @@ public class Model {
     }
 
     private void symbolsAdded(List<Symbol> symbols) {
-        for(ModelListener listener: listeners) {
+        for(ModelListener listener : listeners) {
             listener.symbolsAdded(symbols);
         }
     }
@@ -88,25 +92,34 @@ public class Model {
     }
 
     public Account findAccountById(int id) {
-        Account target = null;
-        if (!accounts.isEmpty()) {
-            for (Account account : accounts) {
-                if (account.getId() == id) {
-                    target = account;
-                    break;
+        for (Account account : accounts) {
+            if (account.getId() == id) {
+                return account;
+            }
+        }
+        return null;
+    }
+
+    public Order findOrderById(int orderId) {
+        for(Account account : accounts) {
+            for (Order order : account.getOrders()) {
+                if (order.getId() == orderId) {
+                    return order;
                 }
             }
         }
-        return target;
+        return null;
+    }
+
+    public List<Account> getAccounts() {
+        return accounts;
     }
 
     private int generateAccountId() {
-        nextAccountId++;
-        return nextAccountId;
+        return ++nextAccountId;
     }
 
     private int generateOrderId() {
-        nextOrderId++;
-        return nextOrderId;
+        return ++nextOrderId;
     }
 }

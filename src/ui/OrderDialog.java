@@ -41,9 +41,6 @@ public class OrderDialog extends JDialog {
         nameTextField = new JTextField();
         nameTextField.setDocument(new JTextFieldLimit(4));
         nameTextField.setPreferredSize(new Dimension(200, 20));
-        if (order.getName() != null) {
-            nameTextField.setText(order.getName());
-        }
         panel.add(nameTextField);
 
         quantityOfStocksLabel = new JLabel("Enter quantity of stocks:");
@@ -62,8 +59,9 @@ public class OrderDialog extends JDialog {
         priceTextField.setPreferredSize(new Dimension(200, 20));
         PlainDocument priceDocument = (PlainDocument) priceTextField.getDocument();
         priceDocument.setDocumentFilter(new DigitFilter());
-        priceTextField.setText(String.valueOf(order.getAskPrice()));
         panel.add(priceTextField);
+
+        setText(nameTextField, priceTextField);
 
         purchaseCostLabel = new JLabel("Purchase cost");
         panel.add(purchaseCostLabel);
@@ -77,8 +75,8 @@ public class OrderDialog extends JDialog {
         priceTextField.addKeyListener(new PriceKeyListener(quantityTextField, priceTextField, costTextField));
 
         sendButton = new JButton("Send");
-        sendButton.addActionListener(e -> sendActionListener(nameTextField.getText(),
-            Integer.parseInt(priceTextField.getText()), Integer.parseInt(quantityTextField.getText())));
+        sendButton.addActionListener(e -> sendActionListener(nameTextField.getText(), priceTextField.getText(),
+                quantityTextField.getText()));
         panel.add(sendButton);
 
         cancelButton = new JButton("Cancel");
@@ -91,13 +89,27 @@ public class OrderDialog extends JDialog {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }
 
-    public void sendActionListener(String name, int price, int quantity) {
-        this.order = new Order(order.getAccountId(), name, quantity, price, LocalDateTime.now());
-        this.dispose();
+    public void sendActionListener(String name, String price, String quantity) {
+        if(quantity.equals("") | price.equals("") | name.equals("")) {
+            JOptionPane.showMessageDialog(this, "Order's fields shouldn't be empty!");
+        } else {
+            this.order = new Order(order.getAccountId(), name, Integer.parseInt(quantity), Integer.parseInt(price),
+                    LocalDateTime.now());
+            this.dispose();
+        }
     }
 
     public Order getOrder() {
+        if(order.getQuantity() == 0 | order.getAskPrice() == 0 | order.getName() == null)
+            return null;
         return order;
+    }
+
+    private void setText(JTextField name, JTextField price) {
+        if(order.getName() != null)
+            name.setText(order.getName());
+        if(order.getAskPrice() != 0)
+            price.setText(String.valueOf(order.getAskPrice()));
     }
 
     private void makeLayout() {

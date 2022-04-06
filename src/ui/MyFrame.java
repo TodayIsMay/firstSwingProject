@@ -17,6 +17,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Timer;
 
+import javax.swing.SwingUtilities;
+
 /**
  * The main class of the program.
  * The program has the following features:
@@ -31,8 +33,8 @@ public class MyFrame extends JFrame implements UpdateListener, ModelListener {
 
     DataBaseConnector connector = new DataBaseConnector();
     Connection connection;
-    private final DefaultTableModel orderDtm;
-    private final DefaultTableModel symbolDtm;
+    private final DefaultTableModel orderTableModel;
+    private final DefaultTableModel symbolTableModel;
     private final JComboBox<Account> accountComboBox;
     AccountDialog accountDialog;
     OrderDialog orderDialog;
@@ -49,14 +51,14 @@ public class MyFrame extends JFrame implements UpdateListener, ModelListener {
         SpringLayout layout = new SpringLayout();
         container.setLayout(layout);
 
-        orderDtm = new DefaultTableModel();
+        orderTableModel = new DefaultTableModel();
         Object[] columHeader = new String[]{"id", "Stock name", "Stock quantity", "Ask price",
             CANCEL_ORDER_COLUMN_HEADER};
-        orderDtm.setColumnIdentifiers(columHeader);
+        orderTableModel.setColumnIdentifiers(columHeader);
 
-        symbolDtm = new DefaultTableModel();
+        symbolTableModel = new DefaultTableModel();
         Object[] symbolDtmColumnHeader = new String[]{"Symbol", "Ask", "Bid"};
-        symbolDtm.setColumnIdentifiers(symbolDtmColumnHeader);
+        symbolTableModel.setColumnIdentifiers(symbolDtmColumnHeader);
 
         accountComboBox = new JComboBox<>();
         accountComboBox.setPreferredSize(new Dimension(250, 20));
@@ -66,27 +68,30 @@ public class MyFrame extends JFrame implements UpdateListener, ModelListener {
 
         JButton addOrderButton = new JButton("Add new order");
         addOrderButton.addActionListener(e -> {
-            orderDialog = new OrderDialog(this, "Create new order", true, new Order(-1,
-                    ((Account) accountComboBox.getSelectedItem()).getId(), null, 0, 0,
-                LocalDateTime.now()));
-            orderDialog.setVisible(true);
-            if(orderDialog.getOrder().getQuantity() != 0)
-                model.addOrder(orderDialog.getOrder());
+            if(accountComboBox.getSelectedItem() == null) {
+                JOptionPane.showMessageDialog(this, "Select an account, please!");
+            } else {
+                orderDialog = createOrderDialog(new Order(((Account) accountComboBox.getSelectedItem()).getId(),
+                        LocalDateTime.now()));
+                orderDialog.setVisible(true);
+                if(orderDialog.getOrder() != null)
+                    model.addOrder(orderDialog.getOrder());
+            }
         });
         container.add(addOrderButton);
         layout.putConstraint(SpringLayout.SOUTH, addOrderButton, -20, SpringLayout.SOUTH, container);
         layout.putConstraint(SpringLayout.WEST, addOrderButton, 150, SpringLayout.WEST, container);
 
-        JTable orderTable = new JTable(orderDtm);
+        JTable orderTable = new JTable(orderTableModel);
         orderTable.getColumn(CANCEL_ORDER_COLUMN_HEADER).setCellRenderer(new ButtonRenderer());
         orderTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                boolean hasFocus, int row, int column) {
-            final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus,
-                row, column);
-            c.setBackground(row % 2 == 0 ? Color.WHITE : Color.LIGHT_GRAY);
-            return c;
+                                                           boolean hasFocus, int row, int column) {
+                final Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus,
+                        row, column);
+                c.setBackground(row % 2 == 0 ? Color.WHITE : Color.LIGHT_GRAY);
+                return c;
             }
         });
 
@@ -98,10 +103,11 @@ public class MyFrame extends JFrame implements UpdateListener, ModelListener {
             public void mouseClicked(MouseEvent e) {
                 JTable target = (JTable) e.getSource();
                 if (target.isColumnSelected(CANCEL_ORDER_COLUMN_NUMBER)) {
-                    int row = target.getSelectedRow();
-                    int id = Integer.parseInt((String) orderDtm.getValueAt(row, ORDER_ID_COLUMN_NUMBER));
-                    orderDtm.removeRow(row);
-                    model.removeOrder((Account) accountComboBox.getSelectedItem(), id);
+                    if(target.getSelectedRow() != -1) {
+                        int row = target.getSelectedRow();
+                        int id = Integer.parseInt((String) orderTableModel.getValueAt(row, ORDER_ID_COLUMN_NUMBER));
+                        model.removeOrder((Account) accountComboBox.getSelectedItem(), id);
+                    }
                 }
             }
         });
@@ -111,7 +117,7 @@ public class MyFrame extends JFrame implements UpdateListener, ModelListener {
         container.add(scrollPane);
         layout.putConstraint(SpringLayout.NORTH, scrollPane, 45, SpringLayout.NORTH, container);
 
-        JTable symbolTable = new JTable(symbolDtm);
+        JTable symbolTable = new JTable(symbolTableModel);
         /*
             shows the "Create new order" dialog with pre-filled name and price of the stock by clicking on
             the cell in colum "ask"
@@ -120,16 +126,19 @@ public class MyFrame extends JFrame implements UpdateListener, ModelListener {
             @Override
             public void mouseClicked(MouseEvent e) {
                 JTable target = (JTable) e.getSource();
-                int row = target.getSelectedRow();
-                String name;
-                name = (String) target.getValueAt(row, 0);
-                int price = Integer.parseInt((String) target.getValueAt(row, 1));
-                if (target.isColumnSelected(1)) {
-                    orderDialog = new OrderDialog(MyFrame.this, "Create new order", true,
-                        new Order(-1, ((Account) accountComboBox.getSelectedItem()).getId(), name,
-                            0, price, LocalDateTime.now()));
-                    orderDialog.setVisible(true);
-                    model.addOrder(orderDialog.getOrder());
+                if (target.getSelectedRow() != -1) {
+                    int row = target.getSelectedRow();
+                    String name = (String) target.getValueAt(row, 0);
+                    String value = (String) target.getValueAt(row, 1);
+                    String digitValue = digitize(value);
+                    int price = Integer.parseInt(digitValue);
+                    if (target.isColumnSelected(1)) {
+                        orderDialog = createOrderDialog(new Order(-1, ((Account) accountComboBox.getSelectedItem())
+                                .getId(), name, 0, price, LocalDateTime.now()));
+                        orderDialog.setVisible(true);
+                        if (orderDialog.getOrder() != null)
+                            model.addOrder(orderDialog.getOrder());
+                    }
                 }
             }
         });
@@ -150,7 +159,7 @@ public class MyFrame extends JFrame implements UpdateListener, ModelListener {
 
         JButton button = new JButton("Add new account");
         button.addActionListener(e -> {
-        accountDialog = new AccountDialog(this, "Add new account", true);
+            accountDialog = new AccountDialog(this, "Add new account", true);
             accountDialog.setVisible(true);
             model.addAccount(accountDialog.getAccount());
         });
@@ -172,30 +181,41 @@ public class MyFrame extends JFrame implements UpdateListener, ModelListener {
             accountComboBox.setSelectedIndex(0);
     }
 
+    private OrderDialog createOrderDialog(Order order) {
+        return  new OrderDialog(this, "Create new order", true, order);
+    }
+
     private void updateOrderTable(List<Order> orders) {
-        try {
-            orderDtm.setRowCount(0);
-            for (Order order : orders) {
-                String[] array = {String.valueOf(order.getId()), order.getName(),
-                        String.valueOf(order.getQuantity()), String.valueOf(order.getAskPrice()), "Cancel"};
-                orderDtm.addRow(array);
-            }
-        }catch (ArrayIndexOutOfBoundsException e) {
-            System.out.println("!!!");
+        orderTableModel.setRowCount(0);
+        for (Order order : orders) {
+            String[] array = {String.valueOf(order.getId()), order.getName(),
+                    String.valueOf(order.getQuantity()), String.valueOf(order.getAskPrice()), "Cancel"};
+            orderTableModel.addRow(array);
         }
     }
 
     private void updateSymbolTable(List<Symbol> symbols) {
-        try {
-            symbolDtm.setRowCount(0);
-            for (Symbol symbol : symbols) {
-                String[] array = {symbol.getName(), String.valueOf(symbol.getAsk()),
-                        String.valueOf(symbol.getBid())};
-                symbolDtm.addRow(array);
-            }
-        }catch (ArrayIndexOutOfBoundsException e) {
-            System.out.println("!!!");
+        symbolTableModel.setRowCount(0);
+        for(Symbol symbol: symbols) {
+            String[] array = {symbol.getName(), ("<html><font color=\"red\">" + symbol.getAsk()),
+                    ("<html><font color=\"green\">" + symbol.getBid())};
+            symbolTableModel.addRow(array);
         }
+    }
+
+    /**
+     *extracts digits from String
+     * e.g. in price cell of <b>orderTableModel</b>
+     */
+    private String digitize(String value) {
+        StringBuilder digitValue = new StringBuilder();
+        char[] chars = value.toCharArray();
+        for (char c : chars) {
+            if (Character.isDigit(c)) {
+                digitValue.append(c);
+            }
+        }
+        return digitValue.toString();
     }
 
     @Override
@@ -224,6 +244,11 @@ public class MyFrame extends JFrame implements UpdateListener, ModelListener {
     }
 
     public static void main(String[] args) {
-        new MyFrame();
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                new MyFrame();
+            }
+        });
     }
 }
